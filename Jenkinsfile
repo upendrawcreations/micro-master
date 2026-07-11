@@ -17,7 +17,7 @@ pipeline {
         string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Branch to build in each service repository.')
         string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag. Empty uses the Jenkins build number and Git commit.')
         string(name: 'REGISTRY', defaultValue: '', description: 'Registry prefix, for example registry.example.com/metaarch. Empty uses the Jenkins agent Docker daemon.')
-        booleanParam(name: 'PUSH_IMAGES', defaultValue: true, description: 'Push images to REGISTRY before deployment.')
+        booleanParam(name: 'PUSH_IMAGES', defaultValue: false, description: 'Push images to REGISTRY before deployment. Disable this for local-only builds.')
     }
 
     environment {
@@ -56,7 +56,7 @@ pipeline {
                             usernameVariable: 'REGISTRY_USER',
                             passwordVariable: 'REGISTRY_PASSWORD'
                         )]) {
-                            bat 'echo %REGISTRY_PASSWORD% | docker login %REGISTRY% --username %REGISTRY_USER% --password-stdin'
+                            sh 'echo "$REGISTRY_PASSWORD" | docker login "$REGISTRY" --username "$REGISTRY_USER" --password-stdin'
                         }
                     }
 
@@ -78,17 +78,17 @@ pipeline {
                                 ]]
                             ])
 
-                            def revision = bat(
-                                script: '@git rev-parse --short=8 HEAD',
+                            def revision = sh(
+                                script: 'git rev-parse --short=8 HEAD',
                                 returnStdout: true
                             ).trim()
                             def tag = params.IMAGE_TAG?.trim() ?: "${env.BUILD_NUMBER}-${revision}"
                             def prefix = params.REGISTRY?.trim()
                             def image = prefix ? "${prefix}/${config.image}:${tag}" : "${config.image}:${tag}"
 
-                            bat "docker build --pull -t ${image} ."
+                            sh "docker build --pull -t '${image}' ."
                             if (params.PUSH_IMAGES) {
-                                bat "docker push ${image}"
+                                sh "docker push '${image}'"
                             }
                             builtImages[serviceName] = image
                         }
@@ -108,8 +108,8 @@ pipeline {
 
                         images.each { serviceName, image ->
                             def config = services[serviceName]
-                            bat "kubectl --kubeconfig \"%KUBECONFIG_FILE%\" -n ${env.KUBE_NAMESPACE} set image deployment/${config.deployment} ${config.container}=${image}"
-                            bat "kubectl --kubeconfig \"%KUBECONFIG_FILE%\" -n ${env.KUBE_NAMESPACE} rollout status deployment/${config.deployment} --timeout=5m"
+                            sh "kubectl --kubeconfig '${KUBECONFIG_FILE}' -n ${env.KUBE_NAMESPACE} set image deployment/${config.deployment} ${config.container}=${image}"
+                            sh "kubectl --kubeconfig '${KUBECONFIG_FILE}' -n ${env.KUBE_NAMESPACE} rollout status deployment/${config.deployment} --timeout=5m"
                         }
                     }
                 }
@@ -119,7 +119,7 @@ pipeline {
 
     post {
         always {
-            bat 'docker logout %REGISTRY% 2>NUL || exit /b 0'
+            sh 'if [ -n "${REGISTRY:-}" ]; then docker logout "$REGISTRY" 2>/dev/null || true; fi'
             cleanWs(deleteDirs: true, notFailBuild: true)
         }
     }
