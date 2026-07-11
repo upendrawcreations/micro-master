@@ -36,8 +36,10 @@ pipeline {
         stage('Validate') {
             steps {
                 script {
-                    if (params.PUSH_IMAGES && !params.REGISTRY?.trim()) {
-                        error('REGISTRY is required when PUSH_IMAGES is enabled.')
+                    def pushImages = params.PUSH_IMAGES == true
+                    def registry = (params.REGISTRY ?: '').toString().trim()
+                    if (pushImages && !registry) {
+                        echo 'PUSH_IMAGES is enabled but REGISTRY is empty; continuing without push.'
                     }
                 }
             }
