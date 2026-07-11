@@ -1,0 +1,161 @@
+pipeline {
+    agent { label 'docker-kubectl' }
+
+    parameters {
+        choice(
+            name: 'SERVICE',
+            choices: [
+                'all',
+                'metaarch-eureka-server',
+                'metaarch-config-server',
+                'metaarch-api-gateway',
+                'org-access',
+                'booking-system'
+            ],
+            description: 'Build and deploy all services or only one service.'
+        )
+        string(name: 'GIT_BRANCH', defaultValue: 'main', description: 'Branch to build in each service repository.')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Image tag. Empty uses the Jenkins build number and Git commit.')
+        string(name: 'REGISTRY', defaultValue: '', description: 'Registry prefix, for example registry.example.com/metaarch. Empty uses the Jenkins agent Docker daemon.')
+        booleanParam(name: 'PUSH_IMAGES', defaultValue: true, description: 'Push images to REGISTRY before deployment.')
+    }
+
+    environment {
+        KUBE_NAMESPACE = 'metaarch'
+        KUBECONFIG_CREDENTIAL_ID = 'metaarch-kubeconfig'
+        REGISTRY_CREDENTIAL_ID = 'metaarch-registry'
+    }
+
+    options {
+        disableConcurrentBuilds()
+        timestamps()
+        skipDefaultCheckout(true)
+    }
+
+    stages {
+        stage('Validate') {
+            steps {
+                script {
+                    if (params.PUSH_IMAGES && !params.REGISTRY?.trim()) {
+                        error('REGISTRY is required when PUSH_IMAGES is enabled.')
+                    }
+                }
+            }
+        }
+
+        stage('Build and publish') {
+            steps {
+                script {
+                    def services = serviceCatalog()
+                    def selected = params.SERVICE == 'all' ? services.keySet() as List : [params.SERVICE]
+                    def builtImages = [:]
+
+                    if (params.PUSH_IMAGES) {
+                        withCredentials([usernamePassword(
+                            credentialsId: env.REGISTRY_CREDENTIAL_ID,
+                            usernameVariable: 'REGISTRY_USER',
+                            passwordVariable: 'REGISTRY_PASSWORD'
+                        )]) {
+                            bat 'echo %REGISTRY_PASSWORD% | docker login %REGISTRY% --username %REGISTRY_USER% --password-stdin'
+                        }
+                    }
+
+                    selected.each { serviceName ->
+                        def config = services[serviceName]
+                        def repositoryUrl = env[config.repositoryVariable]
+                        if (!repositoryUrl) {
+                            error("Jenkins environment variable ${config.repositoryVariable} is not configured.")
+                        }
+
+                        dir("sources/${serviceName}") {
+                            deleteDir()
+                            checkout([
+                                $class: 'GitSCM',
+                                branches: [[name: "*/${params.GIT_BRANCH}"]],
+                                userRemoteConfigs: [[
+                                    url: repositoryUrl,
+                                    credentialsId: 'metaarch-git'
+                                ]]
+                            ])
+
+                            def revision = bat(
+                                script: '@git rev-parse --short=8 HEAD',
+                                returnStdout: true
+                            ).trim()
+                            def tag = params.IMAGE_TAG?.trim() ?: "${env.BUILD_NUMBER}-${revision}"
+                            def prefix = params.REGISTRY?.trim()
+                            def image = prefix ? "${prefix}/${config.image}:${tag}" : "${config.image}:${tag}"
+
+                            bat "docker build --pull -t ${image} ."
+                            if (params.PUSH_IMAGES) {
+                                bat "docker push ${image}"
+                            }
+                            builtImages[serviceName] = image
+                        }
+                    }
+
+                    env.DEPLOY_IMAGES = groovy.json.JsonOutput.toJson(builtImages)
+                }
+            }
+        }
+
+        stage('Deploy selected services') {
+            steps {
+                withCredentials([file(credentialsId: env.KUBECONFIG_CREDENTIAL_ID, variable: 'KUBECONFIG_FILE')]) {
+                    script {
+                        def services = serviceCatalog()
+                        def images = new groovy.json.JsonSlurperClassic().parseText(env.DEPLOY_IMAGES)
+
+                        images.each { serviceName, image ->
+                            def config = services[serviceName]
+                            bat "kubectl --kubeconfig \"%KUBECONFIG_FILE%\" -n ${env.KUBE_NAMESPACE} set image deployment/${config.deployment} ${config.container}=${image}"
+                            bat "kubectl --kubeconfig \"%KUBECONFIG_FILE%\" -n ${env.KUBE_NAMESPACE} rollout status deployment/${config.deployment} --timeout=5m"
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            bat 'docker logout %REGISTRY% 2>NUL || exit /b 0'
+            cleanWs(deleteDirs: true, notFailBuild: true)
+        }
+    }
+}
+
+def serviceCatalog() {
+    return [
+        'metaarch-eureka-server': [
+            repositoryVariable: 'EUREKA_REPO_URL',
+            image: 'metaarch-eureka-server',
+            deployment: 'metaarch-eureka-server',
+            container: 'metaarch-eureka-server'
+        ],
+        'metaarch-config-server': [
+            repositoryVariable: 'CONFIG_SERVER_REPO_URL',
+            image: 'metaarch-config-server',
+            deployment: 'metaarch-config-server',
+            container: 'metaarch-config-server'
+        ],
+        'metaarch-api-gateway': [
+            repositoryVariable: 'API_GATEWAY_REPO_URL',
+            image: 'metaarch-api-gateway',
+            deployment: 'metaarch-api-gateway',
+            container: 'metaarch-api-gateway'
+        ],
+        'org-access': [
+            repositoryVariable: 'ORG_ACCESS_REPO_URL',
+            image: 'org-access',
+            deployment: 'org-access',
+            container: 'org-access'
+        ],
+        'booking-system': [
+            repositoryVariable: 'BOOKING_SYSTEM_REPO_URL',
+            image: 'booking-system',
+            deployment: 'booking-system',
+            container: 'booking-system'
+        ]
+    ]
+}

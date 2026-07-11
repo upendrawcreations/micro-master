@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - prometheus:9090
+
+  - job_name: spring-boot-services
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets:
+          - metaarch-eureka-server:8761
+          - metaarch-config-server:8888
+          - metaarch-api-gateway:8082
+          - org-access:8083
+          - booking-system:8086

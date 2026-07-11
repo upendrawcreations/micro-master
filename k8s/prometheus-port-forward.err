@@ -1,0 +1,38 @@
+I0710 16:48:23.686107   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e0140) Create stream
+I0710 16:48:23.686620   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e0140) Stream added, broadcasting: 1
+I0710 16:48:23.689170   17636 log.go:244] (0x2a8babf9a0b0) Reply frame received for 1
+I0710 16:48:23.689676   17636 log.go:244] (0x2a8bac7e0140) (1) Writing data frame
+I0710 16:48:23.690199   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacf16000) Create stream
+I0710 16:48:23.690711   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacf16000) Stream added, broadcasting: 3
+I0710 16:48:23.691738   17636 log.go:244] (0x2a8babf9a0b0) Reply frame received for 3
+I0710 16:48:23.713208   17636 log.go:244] (0x2a8bacf16000) (3) Writing data frame
+I0710 16:48:23.714720   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 3
+I0710 16:48:23.714720   17636 log.go:244] (0x2a8bacf16000) (3) Data frame handling
+I0710 16:48:23.714720   17636 log.go:244] (0x2a8bacf16000) (3) Data frame sent
+E0710 16:48:23.777020   17636 portforward.go:502] "Unhandled Error" err="error copying from local connection to remote stream: writeto tcp4 127.0.0.1:30090->127.0.0.1:64467: read tcp4 127.0.0.1:30090->127.0.0.1:64467: wsarecv: An existing connection was forcibly closed by the remote host."
+I0710 16:48:23.777020   17636 log.go:244] (0x2a8bacf16000) (3) Writing data frame
+I0710 16:48:23.777020   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacf16000) Stream removed, broadcasting: 3
+I0710 16:48:24.779244   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 1
+I0710 16:48:24.779244   17636 log.go:244] (0x2a8bac7e0140) (1) Data frame handling
+I0710 16:48:24.779244   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e0140) Stream removed, broadcasting: 1
+I0710 16:48:24.779798   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 3
+I0710 16:48:24.779798   17636 log.go:244] (0x2a8babf9a0b0) Data frame gone away for 3
+I0710 16:48:42.322452   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacba80a0) Create stream
+I0710 16:48:42.322452   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacba80a0) Stream added, broadcasting: 5
+I0710 16:48:42.323473   17636 log.go:244] (0x2a8babf9a0b0) Reply frame received for 5
+I0710 16:48:42.323982   17636 log.go:244] (0x2a8bacba80a0) (5) Writing data frame
+I0710 16:48:42.323982   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e01e0) Create stream
+I0710 16:48:42.323982   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e01e0) Stream added, broadcasting: 7
+I0710 16:48:42.325036   17636 log.go:244] (0x2a8babf9a0b0) Reply frame received for 7
+I0710 16:48:42.325557   17636 log.go:244] (0x2a8bac7e01e0) (7) Writing data frame
+I0710 16:48:42.326590   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 7
+I0710 16:48:42.326590   17636 log.go:244] (0x2a8bac7e01e0) (7) Data frame handling
+I0710 16:48:42.326590   17636 log.go:244] (0x2a8bac7e01e0) (7) Data frame sent
+I0710 16:48:42.328695   17636 log.go:244] (0x2a8bac7e01e0) (7) Writing data frame
+I0710 16:48:43.331599   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 7
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8bac7e01e0) (7) Data frame handling
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e01e0) Stream removed, broadcasting: 7
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bac7e01e0) Stream removed, broadcasting: 7
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8babf9a0b0) Data frame received for 5
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8bacba80a0) (5) Data frame handling
+I0710 16:48:43.332101   17636 log.go:244] (0x2a8babf9a0b0) (0x2a8bacba80a0) Stream removed, broadcasting: 5
