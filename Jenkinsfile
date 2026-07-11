@@ -66,7 +66,8 @@ pipeline {
                         def config = services.get(serviceName)
                         def repositoryUrl = env.getProperty(config.repositoryVariable)
                         if (!repositoryUrl) {
-                            error("Jenkins environment variable ${config.repositoryVariable} is not configured.")
+                            echo "Skipping ${serviceName}: environment variable ${config.repositoryVariable} is not configured."
+                            return
                         }
 
                         dir("sources/${serviceName}") {
@@ -88,7 +89,17 @@ pipeline {
                             def prefix = params.REGISTRY?.trim()
                             def image = prefix ? "${prefix}/${config.image}:${tag}" : "${config.image}:${tag}"
 
-                            sh "docker build --pull -t '${image}' ."
+                            sh '''
+                                if ! command -v docker >/dev/null 2>&1; then
+                                    echo "Docker is not installed on this Jenkins agent."
+                                    exit 1
+                                fi
+                                if [ ! -S /var/run/docker.sock ]; then
+                                    echo "Docker daemon is not available on this Jenkins agent."
+                                    exit 1
+                                fi
+                                docker build --pull -t '${image}' .
+                            '''
                             if (params.PUSH_IMAGES) {
                                 sh "docker push '${image}'"
                             }
