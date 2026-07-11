@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'docker-kubectl' }
+    agent any
 
     parameters {
         choice(
