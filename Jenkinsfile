@@ -63,8 +63,8 @@ pipeline {
                     }
 
                     selected.each { serviceName ->
-                        def config = services[serviceName]
-                        def repositoryUrl = env[config.repositoryVariable]
+                        def config = services.get(serviceName)
+                        def repositoryUrl = env.getProperty(config.repositoryVariable)
                         if (!repositoryUrl) {
                             error("Jenkins environment variable ${config.repositoryVariable} is not configured.")
                         }
@@ -92,7 +92,7 @@ pipeline {
                             if (params.PUSH_IMAGES) {
                                 sh "docker push '${image}'"
                             }
-                            builtImages[serviceName] = image
+                            builtImages.put(serviceName, image)
                         }
                     }
 
