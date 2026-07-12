@@ -195,9 +195,7 @@ pipeline {
                     script {
                         def services = serviceCatalog()
 
-                        def images =
-                            new groovy.json.JsonSlurperClassic()
-                                .parseText(env.DEPLOY_IMAGES)
+                        def images = readJSON text: env.DEPLOY_IMAGES
 
                         images.each { serviceName, image ->
                             def config = services.get(serviceName)
