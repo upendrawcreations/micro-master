@@ -130,6 +130,16 @@ pipeline {
                                 ? "${registry}/${config.image}:${tag}"
                                 : "${config.image}:${tag}"
 
+                            echo "Building application JAR for ${serviceName}"
+
+                            sh '''
+                                if [ -x "./mvnw" ]; then
+                                    ./mvnw clean package -DskipTests
+                                else
+                                    mvn clean package -DskipTests
+                                fi
+                            '''
+
                             echo "Building Docker image: ${image}"
 
                             sh """
@@ -142,6 +152,18 @@ pipeline {
                                     echo "Docker daemon is not available."
                                     exit 1
                                 fi
+
+                                if [ ! -d target ]; then
+                                    echo "Maven target directory was not created."
+                                    exit 1
+                                fi
+
+                                if ! ls target/*.jar >/dev/null 2>&1; then
+                                    echo "No JAR file found inside target directory."
+                                    exit 1
+                                fi
+
+                                ls -la target
 
                                 docker build --pull -t "${image}" .
                             """
