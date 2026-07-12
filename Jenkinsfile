@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK21'
+    }
+
     parameters {
         choice(
             name: 'SERVICE',
@@ -44,6 +48,8 @@ pipeline {
         KUBE_NAMESPACE = 'metaarch'
         KUBECONFIG_CREDENTIAL_ID = 'metaarch-kubeconfig'
         REGISTRY_CREDENTIAL_ID = 'metaarch-registry'
+         JAVA_HOME = '/usr/lib/jvm/java-21-openjdk-amd64'
+         PATH = "${JAVA_HOME}/bin:${env.PATH}"
     }
 
     options {
