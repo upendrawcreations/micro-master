@@ -263,11 +263,71 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8086"
-            - name: SPRING_AUTOCONFIGURE_EXCLUDE
-              value: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
           envFrom:
             - configMapRef: {name: metaarch-config}
             - secretRef: {name: metaarch-secrets}
+          startupProbe:
+            httpGet: {path: /actuator/health, port: http}
+            periodSeconds: 10
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /actuator/health, port: http}
+            periodSeconds: 10
+            failureThreshold: 6
+          livenessProbe:
+            httpGet: {path: /actuator/health, port: http}
+            periodSeconds: 20
+            failureThreshold: 3
+          resources:
+            requests: {cpu: 200m, memory: 384Mi}
+            limits: {memory: 768Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alerts-service
+  namespace: metaarch
+spec:
+  selector:
+    app: alerts-service
+  ports:
+    - name: http
+      port: 8087
+      targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alerts-service
+  namespace: metaarch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alerts-service
+  template:
+    metadata:
+      labels:
+        app: alerts-service
+    spec:
+      containers:
+        - name: alerts-service
+          image: alerts-service:local
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8087
+          env:
+            - name: SERVER_PORT
+              value: "8087"
+            - name: MAIL_USERNAME
+              valueFrom: {secretKeyRef: {name: metaarch-secrets, key: MAIL_USERNAME}}
+            - name: MAIL_PASSWORD
+              valueFrom: {secretKeyRef: {name: metaarch-secrets, key: MAIL_PASSWORD}}
+            - name: JWT_SECRET
+              valueFrom: {secretKeyRef: {name: metaarch-secrets, key: JWT_SECRET}}
+          envFrom:
+            - configMapRef: {name: metaarch-config}
           startupProbe:
             httpGet: {path: /actuator/health, port: http}
             periodSeconds: 10

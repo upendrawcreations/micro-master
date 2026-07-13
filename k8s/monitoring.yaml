@@ -21,6 +21,7 @@ data:
               - metaarch-api-gateway:8082
               - org-access:8083
               - booking-system:8086
+              - alerts-service:8087
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -172,4 +173,3 @@ spec:
           persistentVolumeClaim: {claimName: grafana-data}
         - name: datasources
           configMap: {name: grafana-datasources}
-

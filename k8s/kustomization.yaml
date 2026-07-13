@@ -4,7 +4,7 @@ resources:
   - namespace.yaml
   - config.yaml
   - mysql.yaml
+  - kafka.yaml
   - observability.yaml
   - applications.yaml
   - monitoring.yaml
-

@@ -1,4 +1,24 @@
 services:
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "9092:9092"
+    networks:
+      - metaarch-network
+
   mysql:
     image: mysql:8.4
     container_name: mysql
@@ -192,7 +212,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: rootroot
-      SPRING_AUTOCONFIGURE_EXCLUDE: org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: 5000
       LOG_ENV: docker
@@ -206,6 +226,41 @@ services:
       metaarch-config-server:
         condition: service_started
       metaarch-eureka-server:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - metaarch-network
+
+  alerts-service:
+    build:
+      context: ./Alerts
+    image: alerts-service:local
+    container_name: alerts-service
+    environment:
+      SERVER_PORT: 8087
+      CONFIG_SERVER_URL: http://metaarch-config-server:8888
+      EUREKA_SERVER_URL: http://metaarch-eureka-server:8761/eureka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      MAIL_HOST: ${MAIL_HOST:-smtp.gmail.com}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-alerts@example.com}
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-to-a-long-random-string}
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: 5000
+      LOG_ENV: docker
+    ports:
+      - "8087:8087"
+    depends_on:
+      logstash:
+        condition: service_started
+      metaarch-config-server:
+        condition: service_started
+      metaarch-eureka-server:
+        condition: service_started
+      kafka:
         condition: service_started
     networks:
       - metaarch-network

@@ -8,6 +8,10 @@ data:
   # Pod hostnames are not DNS records; advertise routable pod IPs to clients.
   EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
   CONFIG_SERVER_URL: http://metaarch-config-server:8888
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  MAIL_HOST: smtp.gmail.com
+  MAIL_PORT: "587"
+  MAIL_FROM: alerts@example.com
   MYSQL_HOST: mysql
   MYSQL_PORT: "3306"
   LOGSTASH_HOST: logstash
@@ -26,6 +30,9 @@ stringData:
   MYSQL_PASSWORD: rootroot
   GF_SECURITY_ADMIN_USER: admin
   GF_SECURITY_ADMIN_PASSWORD: admin
+  MAIL_USERNAME: replace-with-smtp-username
+  MAIL_PASSWORD: replace-with-smtp-app-password
+  JWT_SECRET: change-this-secret-to-a-long-random-string
 ---
 apiVersion: v1
 kind: ConfigMap

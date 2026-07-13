@@ -14,7 +14,8 @@ pipeline {
                 'metaarch-config-server',
                 'metaarch-api-gateway',
                 'org-access',
-                'booking-system'
+                'booking-system',
+                'alerts-service'
             ],
             description: 'Build and deploy all services or only one service.'
         )
@@ -285,6 +286,13 @@ def serviceCatalog() {
             image: 'booking-system',
             deployment: 'booking-system',
             container: 'booking-system'
+        ],
+
+        'alerts-service': [
+            repositoryVariable: 'ALERTS_SERVICE_REPO_URL',
+            image: 'alerts-service',
+            deployment: 'alerts-service',
+            container: 'alerts-service'
         ]
     ]
 }
