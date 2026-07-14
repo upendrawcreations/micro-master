@@ -208,6 +208,14 @@ pipeline {
                     )
                 ]) {
                     script {
+                        echo 'Applying shared Kubernetes configuration'
+                        sh '''
+                            kubectl \
+                              --kubeconfig "$KUBECONFIG_FILE" \
+                              apply \
+                              -f deployment-config/k8s/config.yaml
+                        '''
+
                         def services = serviceCatalog()
 
                         def images = readJSON text: env.DEPLOY_IMAGES
