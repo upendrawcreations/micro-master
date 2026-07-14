@@ -70,6 +70,14 @@ pipeline {
             }
         }
 
+        stage('Checkout Deployment Configuration') {
+            steps {
+                dir('deployment-config') {
+                    checkout scm
+                }
+            }
+        }
+
         stage('Build Images') {
             steps {
                 script {
@@ -209,23 +217,45 @@ pipeline {
 
                             echo "Deploying ${serviceName} with image ${image}"
 
-                            sh """
-                                kubectl \
-                                --kubeconfig "${KUBECONFIG_FILE}" \
-                                -n "${env.KUBE_NAMESPACE}" \
-                                set image \
-                                deployment/${config.deployment} \
-                                ${config.container}="${image}"
-                            """
+                            withEnv([
+                                "DEPLOYMENT_NAME=${config.deployment}",
+                                "CONTAINER_NAME=${config.container}",
+                                "DEPLOY_IMAGE=${image}",
+                                "MANIFEST_PATH=${config.manifest ?: ''}"
+                            ]) {
+                                sh '''
+                                    if ! kubectl \
+                                      --kubeconfig "$KUBECONFIG_FILE" \
+                                      -n "$KUBE_NAMESPACE" \
+                                      get "deployment/$DEPLOYMENT_NAME" \
+                                      >/dev/null 2>&1; then
+                                        if [ -z "$MANIFEST_PATH" ] || [ ! -f "$MANIFEST_PATH" ]; then
+                                            echo "Deployment $DEPLOYMENT_NAME does not exist and no application manifest is available."
+                                            exit 1
+                                        fi
 
-                            sh """
-                                kubectl \
-                                --kubeconfig "${KUBECONFIG_FILE}" \
-                                -n "${env.KUBE_NAMESPACE}" \
-                                rollout status \
-                                deployment/${config.deployment} \
-                                --timeout=5m
-                            """
+                                        echo "Creating resources for $DEPLOYMENT_NAME"
+                                        kubectl \
+                                          --kubeconfig "$KUBECONFIG_FILE" \
+                                          -n "$KUBE_NAMESPACE" \
+                                          apply -f "$MANIFEST_PATH"
+                                    fi
+
+                                    kubectl \
+                                      --kubeconfig "$KUBECONFIG_FILE" \
+                                      -n "$KUBE_NAMESPACE" \
+                                      set image \
+                                      "deployment/$DEPLOYMENT_NAME" \
+                                      "$CONTAINER_NAME=$DEPLOY_IMAGE"
+
+                                    kubectl \
+                                      --kubeconfig "$KUBECONFIG_FILE" \
+                                      -n "$KUBE_NAMESPACE" \
+                                      rollout status \
+                                      "deployment/$DEPLOYMENT_NAME" \
+                                      --timeout=5m
+                                '''
+                            }
                         }
                     }
                 }
@@ -292,7 +322,8 @@ def serviceCatalog() {
             repositoryVariable: 'ALERTS_SERVICE_REPO_URL',
             image: 'alerts-service',
             deployment: 'alerts-service',
-            container: 'alerts-service'
+            container: 'alerts-service',
+            manifest: 'deployment-config/k8s/alerts-service.yaml'
         ]
     ]
 }

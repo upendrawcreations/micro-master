@@ -7,4 +7,5 @@ resources:
   - kafka.yaml
   - observability.yaml
   - applications.yaml
+  - alerts-service.yaml
   - monitoring.yaml
