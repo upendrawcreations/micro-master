@@ -9,3 +9,4 @@ resources:
   - applications.yaml
   - alerts-service.yaml
   - monitoring.yaml
+  - ingress.yaml
