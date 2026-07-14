@@ -221,6 +221,7 @@ pipeline {
                                 "DEPLOYMENT_NAME=${config.deployment}",
                                 "CONTAINER_NAME=${config.container}",
                                 "DEPLOY_IMAGE=${image}",
+                                "DEPLOY_IMAGE_BASE=${config.image}",
                                 "MANIFEST_PATH=${config.manifest ?: ''}"
                             ]) {
                                 sh '''
@@ -234,11 +235,16 @@ pipeline {
                                             exit 1
                                         fi
 
-                                        echo "Creating resources for $DEPLOYMENT_NAME"
+                                        echo "Creating resources for $DEPLOYMENT_NAME with image $DEPLOY_IMAGE"
+                                        RENDERED_MANIFEST="$(mktemp)"
+                                        sed \
+                                          "s|image: $DEPLOY_IMAGE_BASE:local|image: $DEPLOY_IMAGE|" \
+                                          "$MANIFEST_PATH" > "$RENDERED_MANIFEST"
                                         kubectl \
                                           --kubeconfig "$KUBECONFIG_FILE" \
                                           -n "$KUBE_NAMESPACE" \
-                                          apply -f "$MANIFEST_PATH"
+                                          apply -f "$RENDERED_MANIFEST"
+                                        rm -f "$RENDERED_MANIFEST"
                                     fi
 
                                     kubectl \
@@ -248,12 +254,37 @@ pipeline {
                                       "deployment/$DEPLOYMENT_NAME" \
                                       "$CONTAINER_NAME=$DEPLOY_IMAGE"
 
-                                    kubectl \
+                                    if ! kubectl \
                                       --kubeconfig "$KUBECONFIG_FILE" \
                                       -n "$KUBE_NAMESPACE" \
                                       rollout status \
                                       "deployment/$DEPLOYMENT_NAME" \
-                                      --timeout=5m
+                                      --timeout=5m; then
+                                        echo "Rollout failed. Collecting Kubernetes diagnostics."
+                                        kubectl \
+                                          --kubeconfig "$KUBECONFIG_FILE" \
+                                          -n "$KUBE_NAMESPACE" \
+                                          get pods \
+                                          -l "app=$DEPLOYMENT_NAME" \
+                                          -o wide || true
+                                        kubectl \
+                                          --kubeconfig "$KUBECONFIG_FILE" \
+                                          -n "$KUBE_NAMESPACE" \
+                                          describe "deployment/$DEPLOYMENT_NAME" || true
+                                        kubectl \
+                                          --kubeconfig "$KUBECONFIG_FILE" \
+                                          -n "$KUBE_NAMESPACE" \
+                                          describe pods \
+                                          -l "app=$DEPLOYMENT_NAME" || true
+                                        kubectl \
+                                          --kubeconfig "$KUBECONFIG_FILE" \
+                                          -n "$KUBE_NAMESPACE" \
+                                          logs \
+                                          -l "app=$DEPLOYMENT_NAME" \
+                                          --all-containers=true \
+                                          --tail=200 || true
+                                        exit 1
+                                    fi
                                 '''
                             }
                         }
