@@ -36,6 +36,8 @@ spec:
           env:
             - name: SERVER_PORT
               value: "8087"
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: "kafka:9092"
             - name: MAIL_USERNAME
               valueFrom: {secretKeyRef: {name: metaarch-secrets, key: MAIL_USERNAME}}
             - name: MAIL_PASSWORD
@@ -45,15 +47,15 @@ spec:
           envFrom:
             - configMapRef: {name: metaarch-config}
           startupProbe:
-            httpGet: {path: /actuator/health, port: http}
+            httpGet: {path: /api/alerts/health, port: http}
             periodSeconds: 10
             failureThreshold: 30
           readinessProbe:
-            httpGet: {path: /actuator/health, port: http}
+            httpGet: {path: /api/alerts/health, port: http}
             periodSeconds: 10
             failureThreshold: 6
           livenessProbe:
-            httpGet: {path: /actuator/health, port: http}
+            httpGet: {path: /api/alerts/health, port: http}
             periodSeconds: 20
             failureThreshold: 3
           resources:

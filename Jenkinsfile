@@ -233,17 +233,8 @@ pipeline {
                                 "MANIFEST_PATH=${config.manifest ?: ''}"
                             ]) {
                                 sh '''
-                                    if ! kubectl \
-                                      --kubeconfig "$KUBECONFIG_FILE" \
-                                      -n "$KUBE_NAMESPACE" \
-                                      get "deployment/$DEPLOYMENT_NAME" \
-                                      >/dev/null 2>&1; then
-                                        if [ -z "$MANIFEST_PATH" ] || [ ! -f "$MANIFEST_PATH" ]; then
-                                            echo "Deployment $DEPLOYMENT_NAME does not exist and no application manifest is available."
-                                            exit 1
-                                        fi
-
-                                        echo "Creating resources for $DEPLOYMENT_NAME with image $DEPLOY_IMAGE"
+                                    if [ -n "$MANIFEST_PATH" ] && [ -f "$MANIFEST_PATH" ]; then
+                                        echo "Applying resources for $DEPLOYMENT_NAME with image $DEPLOY_IMAGE"
                                         RENDERED_MANIFEST="$(mktemp)"
                                         sed \
                                           "s|image: $DEPLOY_IMAGE_BASE:local|image: $DEPLOY_IMAGE|" \
@@ -253,6 +244,13 @@ pipeline {
                                           -n "$KUBE_NAMESPACE" \
                                           apply -f "$RENDERED_MANIFEST"
                                         rm -f "$RENDERED_MANIFEST"
+                                    elif ! kubectl \
+                                      --kubeconfig "$KUBECONFIG_FILE" \
+                                      -n "$KUBE_NAMESPACE" \
+                                      get "deployment/$DEPLOYMENT_NAME" \
+                                      >/dev/null 2>&1; then
+                                            echo "Deployment $DEPLOYMENT_NAME does not exist and no application manifest is available."
+                                            exit 1
                                     fi
 
                                     kubectl \
