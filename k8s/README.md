@@ -72,6 +72,25 @@ kubectl get ingressclass
 kubectl get pods -A | Select-String ingress
 ```
 
+When using Windows Command Prompt (`cmd.exe`) instead of PowerShell, use
+`findstr`:
+
+```bat
+kubectl get pods -A | findstr ingress
+```
+
+For local Docker Desktop development, install the controller and wait for it:
+
+```bat
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/cloud/deploy.yaml
+kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=180s
+kubectl get ingressclass
+```
+
+Ingress-nginx has reached retirement and should be treated as a local
+development option here. Select a maintained ingress or Gateway API controller
+before using this setup in a new production environment.
+
 If the cluster does not provide one, install the ingress-nginx controller using
 the installation instructions for that Kubernetes distribution before applying
 these manifests.

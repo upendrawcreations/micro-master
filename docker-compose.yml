@@ -137,6 +137,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: rootroot
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-to-a-long-random-string}
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: 5000
       LOG_ENV: docker
@@ -212,6 +213,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USERNAME: root
       MYSQL_PASSWORD: rootroot
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret-to-a-long-random-string}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       LOGSTASH_HOST: logstash
       LOGSTASH_PORT: 5000
